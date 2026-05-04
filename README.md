@@ -217,14 +217,3 @@ If Neovim closes before the review is done, reopen the project and run:
 The plugin restores saved comments from `.local-review/session.json` and
 recreates markers for files that still exist locally.
 
-## Current Limitations
-
-- The plugin does not integrate with diffview.nvim, fugitive, or gitsigns yet.
-- The generated prompt template is not configurable yet.
-
-## Roadmap
-
-Possible next steps:
-
-- configurable prompt template
-- optional signs in the sign column

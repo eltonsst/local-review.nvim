@@ -188,7 +188,10 @@ local function buffer_for_file(root, file)
 		return nil
 	end
 
-	return vim.fn.bufadd(path)
+	local bufnr = vim.fn.bufadd(path)
+	vim.fn.bufload(bufnr)
+
+	return bufnr
 end
 
 local function restore_extmark(comment)
@@ -196,7 +199,10 @@ local function restore_extmark(comment)
 		return
 	end
 
-	comment.extmark_id = vim.api.nvim_buf_set_extmark(comment.bufnr, state.namespace, comment.line - 1, 0, {
+	local line_count = vim.api.nvim_buf_line_count(comment.bufnr)
+	local marker_line = math.min(math.max(comment.line, 1), line_count)
+
+	comment.extmark_id = vim.api.nvim_buf_set_extmark(comment.bufnr, state.namespace, marker_line - 1, 0, {
 		virt_text = { { " review " .. comment.id, "DiagnosticInfo" } },
 		virt_text_pos = "eol",
 	})
