@@ -11,7 +11,9 @@ into Codex or another coding agent.
 
 Experimental MVP.
 
-The current version stores comments only in memory while Neovim is open.
+The current version stores comments in memory and writes a session backup to
+`.local-review/session.json`. Restoring that session after restarting Neovim is
+planned next.
 
 ## Requirements
 
@@ -76,6 +78,7 @@ This command:
 - builds a markdown prompt
 - copies it to the `+` clipboard register
 - saves a backup to `.local-review/last-review.md`
+- removes `.local-review/session.json`
 - clears the in-memory session and virtual text markers
 
 Abort the review:
@@ -85,7 +88,7 @@ Abort the review:
 ```
 
 This clears the in-memory session and virtual text markers without generating a
-prompt.
+prompt. It also removes `.local-review/session.json`.
 
 Check current review state:
 
@@ -194,11 +197,20 @@ local state = {
 ```
 ````
 
+## Session Backup
+
+While a review is active, comments are backed up to:
+
+```text
+.local-review/session.json
+```
+
+The session backup is updated when comments are added, edited, or deleted. It is
+removed by `:LocalReviewDone` and `:LocalReviewAbort`.
+
 ## Current Limitations
 
-- Comments are not persisted across Neovim restarts.
-- Comments cannot be edited or deleted individually yet.
-- There is no review list UI yet.
+- Session backup restore is not implemented yet.
 - The plugin does not integrate with diffview.nvim, fugitive, or gitsigns yet.
 - The generated prompt template is not configurable yet.
 
@@ -206,6 +218,6 @@ local state = {
 
 Possible next steps:
 
-- persisted `.local-review/session.json`
+- restore `.local-review/session.json` on start
 - configurable prompt template
 - optional signs in the sign column

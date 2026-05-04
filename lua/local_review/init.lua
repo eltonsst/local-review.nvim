@@ -11,6 +11,7 @@ local state = {
 	buffers = {},
 	next_id = 1,
 	namespace = vim.api.nvim_create_namespace("local-review"),
+	root = nil,
 }
 
 local function project_root_for(path)
@@ -129,6 +130,57 @@ local function next_comment_id()
 	return id
 end
 
+local function session_path(root)
+	return vim.fs.joinpath(root or vim.fn.getcwd(), ".local-review", "session.json")
+end
+
+local function serializable_comments()
+	local comments = {}
+
+	for _, comment in ipairs(state.comments) do
+		table.insert(comments, {
+			id = comment.id,
+			root = comment.root,
+			file = comment.file,
+			line = comment.line,
+			target = comment.target,
+			context_before = comment.context_before,
+			context_after = comment.context_after,
+			comment = comment.comment,
+		})
+	end
+
+	return comments
+end
+
+local function save_session()
+	if not state.root or #state.comments == 0 then
+		return
+	end
+
+	local path = session_path(state.root)
+	local data = {
+		version = 1,
+		next_id = state.next_id,
+		comments = serializable_comments(),
+	}
+
+	vim.fn.mkdir(vim.fs.dirname(path), "p")
+	vim.fn.writefile({ vim.json.encode(data) }, path)
+end
+
+local function delete_session_file(root)
+	if not root then
+		return
+	end
+
+	local path = session_path(root)
+
+	if vim.fn.filereadable(path) == 1 then
+		vim.fn.delete(path)
+	end
+end
+
 local function add_comment(location, comment_text)
 	local id = next_comment_id()
 	local extmark_id = vim.api.nvim_buf_set_extmark(location.bufnr, state.namespace, location.line - 1, 0, {
@@ -151,6 +203,8 @@ local function add_comment(location, comment_text)
 
 	table.insert(state.comments, comment)
 	state.buffers[location.bufnr] = true
+	state.root = state.root or location.root
+	save_session()
 
 	return comment
 end
@@ -217,6 +271,8 @@ local function save_prompt(prompt, root)
 end
 
 local function reset_state()
+	local root = state.root
+
 	for bufnr in pairs(state.buffers) do
 		if vim.api.nvim_buf_is_valid(bufnr) then
 			vim.api.nvim_buf_clear_namespace(bufnr, state.namespace, 0, -1)
@@ -227,6 +283,9 @@ local function reset_state()
 	state.comments = {}
 	state.buffers = {}
 	state.next_id = 1
+	state.root = nil
+
+	delete_session_file(root)
 end
 
 function M.setup(opts)
@@ -340,6 +399,11 @@ function M.delete(id)
 			end
 
 			table.remove(state.comments, index)
+			if #state.comments == 0 then
+				delete_session_file(state.root)
+			else
+				save_session()
+			end
 			vim.notify(string.format("Deleted local review comment %s", id), vim.log.levels.INFO)
 			return
 		end
@@ -360,6 +424,7 @@ function M.edit(id)
 		if comment.id == id then
 			open_comment_window(comment, function(updated_comment)
 				comment.comment = updated_comment
+				save_session()
 				vim.notify(string.format("Updated local review comment %s", id), vim.log.levels.INFO)
 			end, comment.comment)
 			return
