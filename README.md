@@ -7,6 +7,21 @@ Neovim, without modifying source files and without opening a GitHub or GitLab
 review. When you are done, it generates a markdown prompt that you can paste
 into Codex or another coding agent.
 
+## Why This Exists
+
+AI coding agents are good at making local changes, but reviewing those changes
+with localized comments is still awkward. Opening a remote pull request can be
+too public or too heavy for experimental work, while writing notes in a separate
+file loses the exact code location.
+
+`local-review.nvim` keeps the review loop local:
+
+1. Let an agent modify code.
+2. Review the changes in Neovim.
+3. Leave inline comments without changing source files.
+4. Export a structured prompt.
+5. Paste the prompt back into the agent.
+
 ## Status
 
 Experimental MVP.
@@ -17,7 +32,7 @@ finds one for the current project.
 
 ## Requirements
 
-- Neovim 0.9 or newer
+- Neovim 0.10 or newer
 - Git is optional, but recommended for project-relative file paths
 - Clipboard support if you want `:LocalReviewDone` to copy to the system
   clipboard
@@ -53,6 +68,32 @@ During local development:
 
 The plugin also works without calling `setup()`. In that case, use the commands
 directly.
+
+## Quick Demo
+
+```vim
+:LocalReviewStart
+:LocalReviewComment
+```
+
+Write a multiline markdown comment in the floating window, then press `<C-s>`.
+The reviewed line shows virtual text like:
+
+```text
+review R1
+```
+
+Inspect collected comments:
+
+```vim
+:LocalReviewList
+```
+
+Finish and copy the generated agent prompt:
+
+```vim
+:LocalReviewDone
+```
 
 ## Usage
 
@@ -229,6 +270,20 @@ If Neovim closes before the review is done, reopen the project and run:
 
 The plugin restores saved comments from `.local-review/session.json` and
 recreates markers for files that still exist locally.
+
+## Manual Verification
+
+For a quick end-to-end check:
+
+1. Run `:LocalReviewStart`.
+2. Run `:LocalReviewComment` on any source line.
+3. Save a comment with `<C-s>`.
+4. Confirm virtual text appears on the reviewed line.
+5. Run `:LocalReviewList` and jump through the quickfix entry.
+6. Run `:LocalReviewEdit R1` and update the text.
+7. Run `:LocalReviewDelete R1` and confirm the marker disappears.
+8. Add another comment and run `:LocalReviewDone`.
+9. Confirm the prompt is copied and `.local-review/last-review.md` exists.
 
 ## Current Limitations
 

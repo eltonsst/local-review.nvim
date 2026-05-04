@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Check formatting
+        run: npx --yes @johnnymorganz/stylua-bin@2.1.0 --check .
+
+      - name: Install Neovim
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: stable
+
+      - name: Smoke test plugin commands
+        run: |
+          nvim --headless --clean \
+            +'set rtp+=.' \
+            +'runtime plugin/local-review.lua' \
+            +'lua require("local_review").setup({ keymap = "<leader>rc" })' \
+            +'LocalReviewStart' \
+            +'LocalReviewStatus' \
+            +'LocalReviewAbort' \
+            +qa

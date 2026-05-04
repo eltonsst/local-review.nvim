@@ -374,7 +374,10 @@ function M.start()
 	local root = project_root_for(vim.api.nvim_buf_get_name(0))
 
 	if load_session(root) then
-		vim.notify(string.format("Restored local review session with %d comment(s)", #state.comments), vim.log.levels.INFO)
+		vim.notify(
+			string.format("Restored local review session with %d comment(s)", #state.comments),
+			vim.log.levels.INFO
+		)
 		return
 	end
 
