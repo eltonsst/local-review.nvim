@@ -282,6 +282,18 @@ function M.done()
 	)
 end
 
+function M.status()
+	local session_status = state.active and "active" or "inactive"
+	local message = string.format("Local review session: %s\nComments: %d", session_status, #state.comments)
+	local latest = state.comments[#state.comments]
+
+	if latest then
+		message = message .. string.format("\nLatest: %s at %s:%d", latest.id, latest.file, latest.line)
+	end
+
+	vim.notify(message, vim.log.levels.INFO)
+end
+
 function M.abort()
 	if not state.active then
 		vim.notify("No active local review session", vim.log.levels.INFO)

@@ -87,6 +87,15 @@ Abort the review:
 This clears the in-memory session and virtual text markers without generating a
 prompt.
 
+Check current review state:
+
+```vim
+:LocalReviewStatus
+```
+
+This shows whether a session is active, how many comments are stored, and the
+latest comment location.
+
 ## Configuration
 
 Default configuration:
