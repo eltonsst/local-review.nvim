@@ -1,0 +1,295 @@
+local M = {}
+
+local config = {
+	context_lines = 5,
+	keymap = nil,
+}
+
+local state = {
+	active = false,
+	comments = {},
+	buffers = {},
+	next_id = 1,
+	namespace = vim.api.nvim_create_namespace("local-review"),
+}
+
+local function project_root_for(path)
+	local start_dir = path ~= "" and vim.fn.fnamemodify(path, ":p:h") or vim.fn.getcwd()
+	local result = vim.fn.systemlist({ "git", "-C", start_dir, "rev-parse", "--show-toplevel" })
+
+	if vim.v.shell_error == 0 and result[1] and result[1] ~= "" then
+		return result[1]
+	end
+
+	return vim.fn.getcwd()
+end
+
+local function relative_path(root, path)
+	if path == "" then
+		return "[No Name]"
+	end
+
+	local normalized_root = vim.fs.normalize(root)
+	local normalized_path = vim.fs.normalize(path)
+	local root_prefix = normalized_root .. "/"
+
+	if vim.startswith(normalized_path, root_prefix) then
+		return normalized_path:sub(#root_prefix + 1)
+	end
+
+	return normalized_path
+end
+
+local function capture_location(context_lines)
+	context_lines = context_lines or config.context_lines
+
+	local bufnr = vim.api.nvim_get_current_buf()
+	local path = vim.api.nvim_buf_get_name(bufnr)
+	local root = project_root_for(path)
+	local row = vim.api.nvim_win_get_cursor(0)[1]
+	local line_count = vim.api.nvim_buf_line_count(bufnr)
+
+	local context_before = vim.api.nvim_buf_get_lines(bufnr, math.max(0, row - 1 - context_lines), row - 1, false)
+	local target = vim.api.nvim_buf_get_lines(bufnr, row - 1, row, false)[1] or ""
+	local context_after = vim.api.nvim_buf_get_lines(bufnr, row, math.min(line_count, row + context_lines), false)
+
+	return {
+		bufnr = bufnr,
+		root = root,
+		file = relative_path(root, path),
+		line = row,
+		target = target,
+		context_before = context_before,
+		context_after = context_after,
+	}
+end
+
+local function open_comment_window(location, on_confirm)
+	local width = math.min(80, math.floor(vim.o.columns * 0.8))
+	local height = math.min(12, math.floor(vim.o.lines * 0.4))
+	local row = math.floor((vim.o.lines - height) / 2)
+	local col = math.floor((vim.o.columns - width) / 2)
+
+	local bufnr = vim.api.nvim_create_buf(false, true)
+	vim.bo[bufnr].buftype = "nofile"
+	vim.bo[bufnr].bufhidden = "wipe"
+	vim.bo[bufnr].filetype = "markdown"
+	vim.bo[bufnr].swapfile = false
+
+	local winid = vim.api.nvim_open_win(bufnr, true, {
+		relative = "editor",
+		width = width,
+		height = height,
+		row = row,
+		col = col,
+		style = "minimal",
+		border = "rounded",
+		title = string.format(" Review %s:%d ", location.file, location.line),
+		title_pos = "center",
+	})
+
+	vim.wo[winid].wrap = true
+	vim.wo[winid].linebreak = true
+
+	local function close_window()
+		if vim.api.nvim_win_is_valid(winid) then
+			vim.api.nvim_win_close(winid, true)
+		end
+	end
+
+	local function confirm()
+		local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+		local comment = vim.trim(table.concat(lines, "\n"))
+
+		close_window()
+
+		if comment == "" then
+			vim.notify("Local review comment cancelled: empty comment", vim.log.levels.INFO)
+			return
+		end
+
+		on_confirm(comment)
+	end
+
+	vim.keymap.set("n", "<C-s>", confirm, { buffer = bufnr, nowait = true, desc = "Save local review comment" })
+	vim.keymap.set("i", "<C-s>", confirm, { buffer = bufnr, nowait = true, desc = "Save local review comment" })
+	vim.keymap.set("n", "<Esc>", close_window, { buffer = bufnr, nowait = true, desc = "Cancel local review comment" })
+
+	vim.cmd.startinsert()
+end
+
+local function next_comment_id()
+	local id = "R" .. state.next_id
+	state.next_id = state.next_id + 1
+	return id
+end
+
+local function add_comment(location, comment_text)
+	local id = next_comment_id()
+	local extmark_id = vim.api.nvim_buf_set_extmark(location.bufnr, state.namespace, location.line - 1, 0, {
+		virt_text = { { " review " .. id, "DiagnosticInfo" } },
+		virt_text_pos = "eol",
+	})
+
+	local comment = {
+		id = id,
+		bufnr = location.bufnr,
+		extmark_id = extmark_id,
+		root = location.root,
+		file = location.file,
+		line = location.line,
+		target = location.target,
+		context_before = location.context_before,
+		context_after = location.context_after,
+		comment = comment_text,
+	}
+
+	table.insert(state.comments, comment)
+	state.buffers[location.bufnr] = true
+
+	return comment
+end
+
+local function fenced_block(label, lines)
+	local content = table.concat(lines, "\n")
+
+	if content == "" then
+		return "```" .. label .. "\n```"
+	end
+
+	return "```" .. label .. "\n" .. content .. "\n```"
+end
+
+local function build_prompt()
+	local lines = {
+		"You are addressing a local code review.",
+		"",
+		"Instructions:",
+		"- Address every review comment below.",
+		"- Do not change unrelated code.",
+		"- Preserve the existing style.",
+		"- Add or update tests where appropriate.",
+		"- After making changes, summarize how each comment was addressed.",
+		"",
+		"Review comments:",
+	}
+
+	for _, comment in ipairs(state.comments) do
+		local nearby_context = vim.list_extend(vim.deepcopy(comment.context_before), { comment.target })
+		vim.list_extend(nearby_context, comment.context_after)
+
+		table.insert(lines, "")
+		table.insert(lines, string.format("## %s - `%s:%d`", comment.id, comment.file, comment.line))
+		table.insert(lines, "")
+		table.insert(lines, "Reviewer comment:")
+		table.insert(lines, "")
+
+		for _, comment_line in ipairs(vim.split(comment.comment, "\n", { plain = true })) do
+			table.insert(lines, "> " .. comment_line)
+		end
+
+		table.insert(lines, "")
+		table.insert(lines, "Target code:")
+		table.insert(lines, "")
+		table.insert(lines, fenced_block("", { comment.target }))
+		table.insert(lines, "")
+		table.insert(lines, "Nearby context:")
+		table.insert(lines, "")
+		table.insert(lines, fenced_block("", nearby_context))
+	end
+
+	return table.concat(lines, "\n") .. "\n"
+end
+
+local function save_prompt(prompt, root)
+	local dir = vim.fs.joinpath(root or vim.fn.getcwd(), ".local-review")
+	local path = vim.fs.joinpath(dir, "last-review.md")
+
+	vim.fn.mkdir(dir, "p")
+	vim.fn.writefile(vim.split(prompt, "\n", { plain = true }), path)
+
+	return path
+end
+
+local function reset_state()
+	for bufnr in pairs(state.buffers) do
+		if vim.api.nvim_buf_is_valid(bufnr) then
+			vim.api.nvim_buf_clear_namespace(bufnr, state.namespace, 0, -1)
+		end
+	end
+
+	state.active = false
+	state.comments = {}
+	state.buffers = {}
+	state.next_id = 1
+end
+
+function M.setup(opts)
+	config = vim.tbl_deep_extend("force", config, opts or {})
+
+	if config.keymap then
+		vim.keymap.set("n", config.keymap, M.comment, { desc = "Add local review comment" })
+	end
+end
+
+function M.start()
+	if state.active then
+		vim.notify("Local review session already active", vim.log.levels.INFO)
+		return
+	end
+
+	state.active = true
+	vim.notify("Local review session started", vim.log.levels.INFO)
+end
+
+function M.comment()
+	if not state.active then
+		M.start()
+	end
+
+	local location = capture_location()
+	open_comment_window(location, function(comment)
+		local stored = add_comment(location, comment)
+		vim.notify(
+			string.format("Stored review comment %s for %s:%d", stored.id, stored.file, stored.line),
+			vim.log.levels.INFO
+		)
+	end)
+end
+
+function M.done()
+	if not state.active then
+		vim.notify("No active local review session", vim.log.levels.INFO)
+		return
+	end
+
+	if #state.comments == 0 then
+		reset_state()
+		vim.notify("No local review comments to export", vim.log.levels.INFO)
+		return
+	end
+
+	local prompt = build_prompt()
+	local saved_path = save_prompt(prompt, state.comments[1].root)
+	local comment_count = #state.comments
+
+	vim.fn.setreg("+", prompt)
+	reset_state()
+
+	vim.notify(
+		string.format("Copied %d review comment(s) and saved %s", comment_count, saved_path),
+		vim.log.levels.INFO
+	)
+end
+
+function M.abort()
+	if not state.active then
+		vim.notify("No active local review session", vim.log.levels.INFO)
+		return
+	end
+
+	reset_state()
+	vim.notify("Local review session aborted", vim.log.levels.INFO)
+end
+
+return M
