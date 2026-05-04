@@ -21,3 +21,9 @@ end, {})
 vim.api.nvim_create_user_command("LocalReviewList", function()
 	require("local_review").list()
 end, {})
+
+vim.api.nvim_create_user_command("LocalReviewDelete", function(opts)
+	require("local_review").delete(opts.args)
+end, {
+	nargs = 1,
+})

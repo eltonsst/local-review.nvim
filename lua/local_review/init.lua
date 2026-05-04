@@ -320,6 +320,29 @@ function M.list()
 	vim.cmd.copen()
 end
 
+function M.delete(id)
+	id = vim.trim(id or "")
+
+	if id == "" then
+		vim.notify("LocalReviewDelete requires a comment id, for example R1", vim.log.levels.WARN)
+		return
+	end
+
+	for index, comment in ipairs(state.comments) do
+		if comment.id == id then
+			if vim.api.nvim_buf_is_valid(comment.bufnr) then
+				vim.api.nvim_buf_del_extmark(comment.bufnr, state.namespace, comment.extmark_id)
+			end
+
+			table.remove(state.comments, index)
+			vim.notify(string.format("Deleted local review comment %s", id), vim.log.levels.INFO)
+			return
+		end
+	end
+
+	vim.notify(string.format("Local review comment %s not found", id), vim.log.levels.WARN)
+end
+
 function M.abort()
 	if not state.active then
 		vim.notify("No active local review session", vim.log.levels.INFO)

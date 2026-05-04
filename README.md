@@ -105,6 +105,14 @@ List current review comments:
 This opens the quickfix list with one item per stored comment. Press Enter on a
 quickfix item to jump back to the reviewed line.
 
+Delete a review comment:
+
+```vim
+:LocalReviewDelete R1
+```
+
+This removes the stored comment and clears its virtual text marker.
+
 ## Configuration
 
 Default configuration:
@@ -190,7 +198,6 @@ local state = {
 Possible next steps:
 
 - `:LocalReviewEdit R1`
-- `:LocalReviewDelete R1`
 - persisted `.local-review/session.json`
 - configurable prompt template
 - optional signs in the sign column
