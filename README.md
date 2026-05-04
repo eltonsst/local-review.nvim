@@ -24,7 +24,20 @@ finds one for the current project.
 
 ## Installation
 
-During local development with lazy.nvim:
+With lazy.nvim:
+
+```lua
+{
+  "eltonsst/local-review.nvim",
+  config = function()
+    require("local_review").setup({
+      keymap = "<leader>rc",
+    })
+  end,
+}
+```
+
+During local development:
 
 ```lua
 {
@@ -217,3 +230,11 @@ If Neovim closes before the review is done, reopen the project and run:
 The plugin restores saved comments from `.local-review/session.json` and
 recreates markers for files that still exist locally.
 
+## Current Limitations
+
+- The generated prompt template is not configurable yet.
+- There are no integrations with diffview.nvim, fugitive, or gitsigns yet.
+
+## License
+
+MIT
