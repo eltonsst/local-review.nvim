@@ -64,7 +64,7 @@ local function capture_location(context_lines)
 	}
 end
 
-local function open_comment_window(location, on_confirm)
+local function open_comment_window(location, on_confirm, initial_text)
 	local width = math.min(80, math.floor(vim.o.columns * 0.8))
 	local height = math.min(12, math.floor(vim.o.lines * 0.4))
 	local row = math.floor((vim.o.lines - height) / 2)
@@ -75,6 +75,10 @@ local function open_comment_window(location, on_confirm)
 	vim.bo[bufnr].bufhidden = "wipe"
 	vim.bo[bufnr].filetype = "markdown"
 	vim.bo[bufnr].swapfile = false
+
+	if initial_text and initial_text ~= "" then
+		vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, vim.split(initial_text, "\n", { plain = true }))
+	end
 
 	local winid = vim.api.nvim_open_win(bufnr, true, {
 		relative = "editor",
@@ -115,6 +119,7 @@ local function open_comment_window(location, on_confirm)
 	vim.keymap.set("i", "<C-s>", confirm, { buffer = bufnr, nowait = true, desc = "Save local review comment" })
 	vim.keymap.set("n", "<Esc>", close_window, { buffer = bufnr, nowait = true, desc = "Cancel local review comment" })
 
+	vim.api.nvim_win_set_cursor(winid, { vim.api.nvim_buf_line_count(bufnr), 0 })
 	vim.cmd.startinsert()
 end
 
@@ -336,6 +341,27 @@ function M.delete(id)
 
 			table.remove(state.comments, index)
 			vim.notify(string.format("Deleted local review comment %s", id), vim.log.levels.INFO)
+			return
+		end
+	end
+
+	vim.notify(string.format("Local review comment %s not found", id), vim.log.levels.WARN)
+end
+
+function M.edit(id)
+	id = vim.trim(id or "")
+
+	if id == "" then
+		vim.notify("LocalReviewEdit requires a comment id, for example R1", vim.log.levels.WARN)
+		return
+	end
+
+	for _, comment in ipairs(state.comments) do
+		if comment.id == id then
+			open_comment_window(comment, function(updated_comment)
+				comment.comment = updated_comment
+				vim.notify(string.format("Updated local review comment %s", id), vim.log.levels.INFO)
+			end, comment.comment)
 			return
 		end
 	end

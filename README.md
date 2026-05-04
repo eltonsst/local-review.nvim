@@ -113,6 +113,15 @@ Delete a review comment:
 
 This removes the stored comment and clears its virtual text marker.
 
+Edit a review comment:
+
+```vim
+:LocalReviewEdit R1
+```
+
+This reopens the floating markdown buffer with the existing comment text. Saving
+updates the stored comment while keeping the same review ID and marker.
+
 ## Configuration
 
 Default configuration:
@@ -197,7 +206,6 @@ local state = {
 
 Possible next steps:
 
-- `:LocalReviewEdit R1`
 - persisted `.local-review/session.json`
 - configurable prompt template
 - optional signs in the sign column
