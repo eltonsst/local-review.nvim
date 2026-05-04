@@ -1,5 +1,9 @@
 # local-review.nvim
 
+[![CI](https://github.com/eltonsst/local-review.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/eltonsst/local-review.nvim/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Neovim](https://img.shields.io/badge/Neovim-0.10%2B-57A143?logo=neovim&logoColor=white)](https://neovim.io/)
+
 Local inline review comments for AI-agent coding workflows.
 
 This plugin lets you leave review comments at the line you are reading in
