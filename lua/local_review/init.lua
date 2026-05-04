@@ -294,6 +294,32 @@ function M.status()
 	vim.notify(message, vim.log.levels.INFO)
 end
 
+function M.list()
+	if #state.comments == 0 then
+		vim.notify("No local review comments", vim.log.levels.INFO)
+		return
+	end
+
+	local items = {}
+
+	for _, comment in ipairs(state.comments) do
+		local first_line = vim.split(comment.comment, "\n", { plain = true })[1] or ""
+
+		table.insert(items, {
+			bufnr = comment.bufnr,
+			lnum = comment.line,
+			col = 1,
+			text = string.format("%s: %s", comment.id, first_line),
+		})
+	end
+
+	vim.fn.setqflist({}, " ", {
+		title = "Local Review Comments",
+		items = items,
+	})
+	vim.cmd.copen()
+end
+
 function M.abort()
 	if not state.active then
 		vim.notify("No active local review session", vim.log.levels.INFO)

@@ -96,6 +96,15 @@ Check current review state:
 This shows whether a session is active, how many comments are stored, and the
 latest comment location.
 
+List current review comments:
+
+```vim
+:LocalReviewList
+```
+
+This opens the quickfix list with one item per stored comment. Press Enter on a
+quickfix item to jump back to the reviewed line.
+
 ## Configuration
 
 Default configuration:
@@ -180,7 +189,6 @@ local state = {
 
 Possible next steps:
 
-- `:LocalReviewList`
 - `:LocalReviewEdit R1`
 - `:LocalReviewDelete R1`
 - persisted `.local-review/session.json`

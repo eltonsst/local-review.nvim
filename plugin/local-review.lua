@@ -17,3 +17,7 @@ end, {})
 vim.api.nvim_create_user_command("LocalReviewStatus", function()
 	require("local_review").status()
 end, {})
+
+vim.api.nvim_create_user_command("LocalReviewList", function()
+	require("local_review").list()
+end, {})
