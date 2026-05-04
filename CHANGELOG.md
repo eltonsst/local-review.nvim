@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.1.1 - 2026-05-05
+
+Public readiness release.
+
+### Added
+
+- Public-facing README sections for motivation, quick demo, and manual
+  verification.
+- Stylua formatting configuration.
+- GitHub Actions CI for formatting and a headless Neovim smoke test.
+
+### Changed
+
+- Documented Neovim 0.10+ as the supported minimum version.
+- Formatted Lua code with Stylua.
+
 ## v0.1.0 - 2026-05-05
 
 Initial MVP release.
