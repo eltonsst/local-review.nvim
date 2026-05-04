@@ -181,6 +181,68 @@ local function delete_session_file(root)
 	end
 end
 
+local function buffer_for_file(root, file)
+	local path = vim.fs.joinpath(root, file)
+
+	if vim.fn.filereadable(path) ~= 1 then
+		return nil
+	end
+
+	return vim.fn.bufadd(path)
+end
+
+local function restore_extmark(comment)
+	if not comment.bufnr or not vim.api.nvim_buf_is_valid(comment.bufnr) then
+		return
+	end
+
+	comment.extmark_id = vim.api.nvim_buf_set_extmark(comment.bufnr, state.namespace, comment.line - 1, 0, {
+		virt_text = { { " review " .. comment.id, "DiagnosticInfo" } },
+		virt_text_pos = "eol",
+	})
+	state.buffers[comment.bufnr] = true
+end
+
+local function load_session(root)
+	local path = session_path(root)
+
+	if vim.fn.filereadable(path) ~= 1 then
+		return false
+	end
+
+	local lines = vim.fn.readfile(path)
+	local ok, data = pcall(vim.json.decode, table.concat(lines, "\n"))
+
+	if not ok or type(data) ~= "table" or type(data.comments) ~= "table" then
+		vim.notify("Could not restore local review session: invalid session file", vim.log.levels.WARN)
+		return false
+	end
+
+	state.root = root
+	state.next_id = data.next_id or 1
+	state.comments = {}
+	state.buffers = {}
+
+	for _, saved_comment in ipairs(data.comments) do
+		local comment = {
+			id = saved_comment.id,
+			root = saved_comment.root or root,
+			file = saved_comment.file,
+			line = saved_comment.line,
+			target = saved_comment.target,
+			context_before = saved_comment.context_before or {},
+			context_after = saved_comment.context_after or {},
+			comment = saved_comment.comment or "",
+		}
+
+		comment.bufnr = buffer_for_file(comment.root, comment.file)
+		restore_extmark(comment)
+		table.insert(state.comments, comment)
+	end
+
+	return #state.comments > 0
+end
+
 local function add_comment(location, comment_text)
 	local id = next_comment_id()
 	local extmark_id = vim.api.nvim_buf_set_extmark(location.bufnr, state.namespace, location.line - 1, 0, {
@@ -303,6 +365,14 @@ function M.start()
 	end
 
 	state.active = true
+	local root = project_root_for(vim.api.nvim_buf_get_name(0))
+
+	if load_session(root) then
+		vim.notify(string.format("Restored local review session with %d comment(s)", #state.comments), vim.log.levels.INFO)
+		return
+	end
+
+	state.root = root
 	vim.notify("Local review session started", vim.log.levels.INFO)
 end
 

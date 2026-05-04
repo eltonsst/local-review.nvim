@@ -12,8 +12,8 @@ into Codex or another coding agent.
 Experimental MVP.
 
 The current version stores comments in memory and writes a session backup to
-`.local-review/session.json`. Restoring that session after restarting Neovim is
-planned next.
+`.local-review/session.json`. `:LocalReviewStart` restores that session when it
+finds one for the current project.
 
 ## Requirements
 
@@ -208,9 +208,17 @@ While a review is active, comments are backed up to:
 The session backup is updated when comments are added, edited, or deleted. It is
 removed by `:LocalReviewDone` and `:LocalReviewAbort`.
 
+If Neovim closes before the review is done, reopen the project and run:
+
+```vim
+:LocalReviewStart
+```
+
+The plugin restores saved comments from `.local-review/session.json` and
+recreates markers for files that still exist locally.
+
 ## Current Limitations
 
-- Session backup restore is not implemented yet.
 - The plugin does not integrate with diffview.nvim, fugitive, or gitsigns yet.
 - The generated prompt template is not configurable yet.
 
@@ -218,6 +226,5 @@ removed by `:LocalReviewDone` and `:LocalReviewAbort`.
 
 Possible next steps:
 
-- restore `.local-review/session.json` on start
 - configurable prompt template
 - optional signs in the sign column
