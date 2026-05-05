@@ -24,6 +24,13 @@ jobs:
           neovim: true
           version: stable
 
+      - name: Run unit tests
+        run: |
+          nvim --headless --clean \
+            +'set rtp+=.' \
+            +'luafile tests/run.lua' \
+            +qa
+
       - name: Smoke test plugin commands
         run: |
           nvim --headless --clean \
