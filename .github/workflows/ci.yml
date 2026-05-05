@@ -30,6 +30,9 @@ jobs:
             +'set rtp+=.' \
             +'runtime plugin/local-review.lua' \
             +'lua require("local_review").setup({ keymap = "<leader>rc" })' \
+            +'helptags doc' \
+            +'help local-review' \
+            +'checkhealth local_review' \
             +'LocalReviewStart' \
             +'LocalReviewStatus' \
             +'LocalReviewAbort' \

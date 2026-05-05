@@ -26,6 +26,21 @@ file loses the exact code location.
 4. Export a structured prompt.
 5. Paste the prompt back into the agent.
 
+## Features
+
+- Floating multiline markdown comment window.
+- Inline virtual text markers without modifying source files.
+- Quickfix list for collected review comments.
+- Edit and delete review comments before export.
+- Codex-ready markdown prompt copied to the clipboard.
+- Prompt backup written to `.local-review/last-review.md`.
+- Session backup and restore with `.local-review/session.json`.
+- `:help local-review` and `:checkhealth local_review` support.
+
+## Demo
+
+![local-review.nvim demo](assets/demo.png)
+
 ## Status
 
 Experimental MVP.
@@ -40,6 +55,12 @@ finds one for the current project.
 - Git is optional, but recommended for project-relative file paths
 - Clipboard support if you want `:LocalReviewDone` to copy to the system
   clipboard
+
+If Git is unavailable or the current file is outside a Git repository, paths
+fall back to Neovim's current working directory when possible.
+
+If clipboard support is unavailable, `:LocalReviewDone` still writes the prompt
+backup to `.local-review/last-review.md`.
 
 ## Installation
 
@@ -72,6 +93,25 @@ During local development:
 
 The plugin also works without calling `setup()`. In that case, use the commands
 directly.
+
+After installing, Neovim should generate help tags automatically through your
+plugin manager. If not, run:
+
+```vim
+:helptags ALL
+```
+
+Then open the help page:
+
+```vim
+:help local-review
+```
+
+You can also check local requirements:
+
+```vim
+:checkhealth local_review
+```
 
 ## Quick Demo
 
