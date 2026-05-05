@@ -1,0 +1,150 @@
+*local-review.nvim*        Local inline code review comments
+
+==============================================================================
+CONTENTS                                          *local-review-contents*
+
+  1. Overview...............................|local-review-overview|
+  2. Requirements...........................|local-review-requirements|
+  3. Setup..................................|local-review-setup|
+  4. Commands...............................|local-review-commands|
+  5. Workflow...............................|local-review-workflow|
+  6. Healthcheck............................|local-review-health|
+
+==============================================================================
+OVERVIEW                                          *local-review-overview*
+
+local-review.nvim helps you leave local inline review comments while reviewing
+changes made by coding agents. Comments are stored outside source files and are
+shown with virtual text markers such as:
+>
+  review R1
+<
+When the review is done, local-review.nvim builds a markdown prompt, copies it
+to the system clipboard, and saves a backup at:
+>
+  .local-review/last-review.md
+<
+Active sessions are backed up to:
+>
+  .local-review/session.json
+<
+
+==============================================================================
+REQUIREMENTS                                      *local-review-requirements*
+
+- Neovim 0.10 or newer
+- Git is optional, but recommended for project-relative paths
+- Clipboard support is optional, but recommended for :LocalReviewDone
+
+If Git is unavailable or the current file is outside a Git repository,
+local-review.nvim falls back to Neovim's current working directory when building
+relative file paths.
+
+If clipboard support is unavailable, :LocalReviewDone still writes the generated
+prompt to .local-review/last-review.md.
+
+==============================================================================
+SETUP                                             *local-review-setup*
+
+With lazy.nvim:
+>
+  {
+    "eltonsst/local-review.nvim",
+    config = function()
+      require("local_review").setup({
+        keymap = "<leader>rc",
+      })
+    end,
+  }
+<
+Default configuration:
+>
+  require("local_review").setup({
+    context_lines = 5,
+    keymap = nil,
+  })
+<
+Options:
+
+                                                        *local-review-context_lines*
+context_lines~
+    Number of lines captured before and after the reviewed line.
+
+                                                        *local-review-keymap*
+keymap~
+    Optional normal-mode mapping for :LocalReviewComment.
+
+==============================================================================
+COMMANDS                                          *local-review-commands*
+
+                                                        *:LocalReviewStart*
+:LocalReviewStart~
+    Start a review session. If .local-review/session.json exists for the
+    current project, restore the previous session.
+
+                                                        *:LocalReviewComment*
+:LocalReviewComment~
+    Open a floating markdown window for a review comment at the current cursor
+    line. Press <C-s> to save or <Esc> in normal mode to cancel.
+
+                                                        *:LocalReviewDone*
+:LocalReviewDone~
+    Generate the review prompt, copy it to the + register, write
+    .local-review/last-review.md, clear markers, and remove the session backup.
+
+                                                        *:LocalReviewAbort*
+:LocalReviewAbort~
+    Clear the current review session and remove .local-review/session.json
+    without generating a prompt.
+
+                                                        *:LocalReviewStatus*
+:LocalReviewStatus~
+    Show whether a session is active, how many comments are stored, and the
+    latest comment location.
+
+                                                        *:LocalReviewList*
+:LocalReviewList~
+    Populate and open the quickfix list with one item per stored review
+    comment.
+
+                                                        *:LocalReviewEdit*
+:LocalReviewEdit {id}~
+    Reopen the floating markdown window for an existing comment, for example:
+>
+  :LocalReviewEdit R1
+<
+                                                        *:LocalReviewDelete*
+:LocalReviewDelete {id}~
+    Delete a stored comment and clear its virtual text marker, for example:
+>
+  :LocalReviewDelete R1
+<
+
+==============================================================================
+WORKFLOW                                          *local-review-workflow*
+
+Typical flow:
+>
+  :LocalReviewStart
+  :LocalReviewComment
+  :LocalReviewList
+  :LocalReviewDone
+<
+The generated prompt asks the coding agent to address every review comment,
+preserve existing style, avoid unrelated changes, and summarize the result.
+
+==============================================================================
+HEALTHCHECK                                       *local-review-health*
+
+Run:
+>
+  :checkhealth local_review
+<
+The healthcheck verifies:
+
+- Neovim 0.10+
+- git executable availability
+- clipboard provider availability
+
+==============================================================================
+ vim:tw=78:ts=8:noet:ft=help:norl:
