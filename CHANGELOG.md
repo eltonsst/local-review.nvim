@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.1.3 - 2026-05-05
+
+Review marker preview release.
+
+### Added
+
+- Compact virtual text review markers with comment previews.
+- Updated demo screenshot showing the new marker UI.
+- Git ignore entry for local `AGENT_CONTEXT.md` handoff files.
+
+### Changed
+
+- Shortened review marker previews to 30 characters.
+- Refreshed review markers immediately after editing an existing comment.
+- Updated README and vimdoc marker examples.
+
 ## v0.1.2 - 2026-05-05
 
 Neovim public polish release.
