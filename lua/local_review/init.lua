@@ -130,6 +130,30 @@ local function next_comment_id()
 	return id
 end
 
+local function format_virt_text(id, comment_text)
+	local lines = vim.split(comment_text, "\n", { plain = true })
+	local first_line = vim.trim(lines[1] or "")
+
+	first_line = first_line:gsub("^[>#+*%-]+%s*", "")
+
+	local max_length = 30
+	local needs_ellipsis = false
+
+	if #first_line > max_length then
+		first_line = first_line:sub(1, max_length)
+		needs_ellipsis = true
+	elseif #lines > 1 then
+		needs_ellipsis = true
+	end
+
+	local preview = first_line
+	if needs_ellipsis then
+		preview = preview .. "..."
+	end
+
+	return "💬 " .. id .. ". " .. preview
+end
+
 local function session_path(root)
 	return vim.fs.joinpath(root or vim.fn.getcwd(), ".local-review", "session.json")
 end
@@ -202,8 +226,9 @@ local function restore_extmark(comment)
 	local line_count = vim.api.nvim_buf_line_count(comment.bufnr)
 	local marker_line = math.min(math.max(comment.line, 1), line_count)
 
+	local virt_text_label = format_virt_text(comment.id, comment.comment)
 	comment.extmark_id = vim.api.nvim_buf_set_extmark(comment.bufnr, state.namespace, marker_line - 1, 0, {
-		virt_text = { { " review " .. comment.id, "DiagnosticInfo" } },
+		virt_text = { { virt_text_label, "DiagnosticInfo" } },
 		virt_text_pos = "eol",
 	})
 	state.buffers[comment.bufnr] = true
@@ -251,8 +276,9 @@ end
 
 local function add_comment(location, comment_text)
 	local id = next_comment_id()
+	local virt_text_label = format_virt_text(id, comment_text)
 	local extmark_id = vim.api.nvim_buf_set_extmark(location.bufnr, state.namespace, location.line - 1, 0, {
-		virt_text = { { " review " .. id, "DiagnosticInfo" } },
+		virt_text = { { virt_text_label, "DiagnosticInfo" } },
 		virt_text_pos = "eol",
 	})
 
@@ -503,6 +529,10 @@ function M.edit(id)
 		if comment.id == id then
 			open_comment_window(comment, function(updated_comment)
 				comment.comment = updated_comment
+				if vim.api.nvim_buf_is_valid(comment.bufnr) then
+					vim.api.nvim_buf_del_extmark(comment.bufnr, state.namespace, comment.extmark_id)
+					restore_extmark(comment)
+				end
 				save_session()
 				vim.notify(string.format("Updated local review comment %s", id), vim.log.levels.INFO)
 			end, comment.comment)
