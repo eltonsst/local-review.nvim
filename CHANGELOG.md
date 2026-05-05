@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.1.4 - 2026-05-05
+
+Stability refactor and compact prompt release.
+
+### Added
+
+- Headless Neovim unit tests for prompt, marker, path, and session helpers.
+- CI step that runs the unit test suite.
+
+### Changed
+
+- Split the main runtime module into focused modules for paths, location
+  capture, markers, prompt generation, session persistence, state, and UI.
+- Simplified the generated review prompt to a compact comment list with target
+  lines.
+- Render multiline review comments as markdown quote blocks in the generated
+  prompt.
+- Polished README content for plugin users.
+
 ## v0.1.3 - 2026-05-05
 
 Review marker preview release.
