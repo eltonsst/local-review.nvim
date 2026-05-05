@@ -77,20 +77,6 @@ With lazy.nvim:
 }
 ```
 
-During local development:
-
-```lua
-{
-  dir = "~/learning/local-review.nvim",
-  name = "local-review.nvim",
-  config = function()
-    require("local_review").setup({
-      keymap = "<leader>rc",
-    })
-  end,
-}
-```
-
 The plugin also works without calling `setup()`. In that case, use the commands
 directly.
 
@@ -252,48 +238,25 @@ require("local_review").setup({
 
 The generated prompt contains:
 
-- general instructions for the coding agent
 - each review comment
 - file path and line number
 - target line
-- nearby context
 
 Example:
 
-````markdown
-You are addressing a local code review.
+```markdown
+Address these local review comments.
 
-Instructions:
-- Address every review comment below.
-- Do not change unrelated code.
-- Preserve the existing style.
-- Add or update tests where appropriate.
-- After making changes, summarize how each comment was addressed.
+- R1 `lua/local_review/init.lua:42`
+  Target: `local value = compute()`
+  Comment: Please simplify this branch.
 
-Review comments:
-
-## R1 - `lua/local_review/init.lua:10`
-
-Reviewer comment:
-
-> This is a test comment.
-
-Target code:
-
+- R2 `README.md:80`
+  Target: `## Usage`
+  Comment:
+  > Tighten this section.
+  > Keep it focused on users.
 ```
-comments = {},
-```
-
-Nearby context:
-
-```
-local state = {
-  active = false,
-  comments = {},
-  buffers = {},
-}
-```
-````
 
 ## Session Backup
 
@@ -314,20 +277,6 @@ If Neovim closes before the review is done, reopen the project and run:
 
 The plugin restores saved comments from `.local-review/session.json` and
 recreates markers for files that still exist locally.
-
-## Manual Verification
-
-For a quick end-to-end check:
-
-1. Run `:LocalReviewStart`.
-2. Run `:LocalReviewComment` on any source line.
-3. Save a comment with `<C-s>`.
-4. Confirm virtual text appears on the reviewed line.
-5. Run `:LocalReviewList` and jump through the quickfix entry.
-6. Run `:LocalReviewEdit R1` and update the text.
-7. Run `:LocalReviewDelete R1` and confirm the marker disappears.
-8. Add another comment and run `:LocalReviewDone`.
-9. Confirm the prompt is copied and `.local-review/last-review.md` exists.
 
 ## Current Limitations
 
