@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.1.2 - 2026-05-05
+
+Neovim public polish release.
+
+### Added
+
+- Vim help documentation at `doc/local-review.txt`.
+- Healthcheck support with `:checkhealth local_review`.
+- README demo screenshot.
+- README feature list and clearer dependency fallback notes.
+- CI smoke coverage for help tags, help lookup, and healthcheck.
+
 ## v0.1.1 - 2026-05-05
 
 Public readiness release.
