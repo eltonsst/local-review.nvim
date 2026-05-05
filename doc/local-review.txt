@@ -17,7 +17,7 @@ local-review.nvim helps you leave local inline review comments while reviewing
 changes made by coding agents. Comments are stored outside source files and are
 shown with virtual text markers such as:
 >
-  review R1
+  💬 R1. Consider extracting this...
 <
 When the review is done, local-review.nvim builds a markdown prompt, copies it
 to the system clipboard, and saves a backup at:

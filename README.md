@@ -124,7 +124,7 @@ Write a multiline markdown comment in the floating window, then press `<C-s>`.
 The reviewed line shows virtual text like:
 
 ```text
-review R1
+💬 R1. Consider extracting this...
 ```
 
 Inspect collected comments:
@@ -162,7 +162,7 @@ This opens a floating markdown buffer.
 Saved comments are shown with virtual text at the reviewed line, such as:
 
 ```text
-review R1
+💬 R1. Consider extracting this...
 ```
 
 Finish the review:
